@@ -7,8 +7,8 @@ library(janitor) # for data cleaning
 library(naniar) # for missing data visualization
 library(rstatix) # for summary statistics
 library(gtsummary) # for creating tables
-library(kableExtra)
-library(modelsummary)
+library(kableExtra) # for creating tables
+library(modelsummary) # for summarizing regression models
 
 ## Reading data 
 df_r<-read.csv("insurance_costs.csv")
@@ -32,14 +32,16 @@ pct_complete_case(df_r)
 
 
 ## Data cleaning 
-df_clean<-df_r %>%
+library(tidyverse)
+library(janitor)
+
+df_clean <- df_r %>%
   clean_names() %>%
   distinct() %>%
   mutate(across(where(is.character), ~ {
     val <- str_to_title(str_trim(.x))
     na_if(val, "")
   })) %>%
-  mutate(across(where(is.character), ~str_to_title(str_trim(.x)))) %>%
   mutate(across(c(bmi, age, annual_checkups), as.numeric)) %>%
   mutate(
     bmi_cat = case_when(
@@ -66,9 +68,14 @@ df_clean<-df_r %>%
       .default = chronic_condition
     )
   ) %>%
-  drop_na()
+  mutate(
+    age_cat = factor(age_cat, levels = c("Child", "Adult", "Senior")),
+    bmi_cat = factor(bmi_cat, levels = c("Underweight", "Normal Weight", "Overweight", "Obese")),
+    exercise_level = factor(exercise_level, levels = c("Low", "Medium", "High"))
+  ) %>%
+  drop_na()  # complete case since missing data is less than 5% and likely MCAR
 
-str(df_clean)
+str(df_clean)  
  table(df_clean$exercise_level)
 
  #exploratory data analysis 
@@ -94,13 +101,12 @@ cat_sum<-df_clean %>%
     missing = "no")
 cat_sum
 
-
 ##Cross tabulations
 cross_tab1<-df_clean %>%
-  select(smoker, region) %>%
+  select(smoker, bmi_cat) %>%
   tbl_cross(
     row = smoker,
-    col = region,
+    col = bmi_cat,
     percent = "row"
   )
 cross_tab1
@@ -116,37 +122,37 @@ cross_tab2<-df_clean %>%
 cross_tab2
 
 cross_tab3<-df_clean %>%
-  select(chronic_condition, exercise_level) %>%
+  select(chronic_condition, bmi_cat) %>%
   tbl_cross(
     row = chronic_condition,
-    col = exercise_level,
+    col = bmi_cat,
     percent = "row"
   )
 cross_tab3
 
 cross_tab4<-df_clean %>%
-  select(plan_type, region) %>%
+  select(plan_type, bmi_cat) %>%
   tbl_cross(
     row = plan_type,
-    col = region,
+    col = bmi_cat,
     percent = "row"
   )
 cross_tab4
 
 cross_tab5<-df_clean %>%
-  select(plan_type, smoker) %>%
+  select(plan_type, age_cat) %>%
   tbl_cross(
-    row = smoker,
-    col = plan_type,
+    row = plan_type,
+    col = age_cat,
     percent = "row"
   )
 cross_tab5
 
 cross_tab6<-df_clean %>%
-  select(age_cat, chronic_condition) %>%
+  select(chronic_condition, age_cat) %>%
   tbl_cross(
-    row = age_cat,
-    col = chronic_condition,
+    row = chronic_condition,
+    col = age_cat,
     percent = "row"
   )
 cross_tab6
@@ -160,6 +166,14 @@ cross_tab7<-df_clean %>%
   )
 cross_tab7
 
+tbl_stack(list(cross_tab1, cross_tab2,cross_tab3,cross_tab4,cross_tab5,
+               cross_tab6, cross_tab7),group_header = c("Crosstab:  Smoking Status by BMI Category", 
+                                                         "Crosstab: Age group by BMI category", 
+                                                         "Crosstab: Chronic Condition by BMI category",
+                                                        " Crosstab: Plan type by BMI category",
+                                                        " Crosstab: Plan type by age category",
+                                                        " Crosstab: chronic conditions by age category",
+                                                        " Crosstab: exercise level by BMI category"))
 ### Visualizations
 
 ##boxplots
