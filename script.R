@@ -65,12 +65,13 @@ df_clean<-df_r %>%
       chronic_condition == "No" ~ "No Condition",
       .default = chronic_condition
     )
-  )
+  ) %>%
+  drop_na()
 
- 
-table(df_clean$smoker)
-######## exploratory data analysis 
+str(df_clean)
+ table(df_clean$exercise_level)
 
+ #exploratory data analysis 
 
 ## Summary tables
 table(df_clean$children)
@@ -160,124 +161,116 @@ cross_tab7<-df_clean %>%
 cross_tab7
 
 ### Visualizations
-ggplot(df_clean, aes(x = age, y = charges)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(title = " A scatterplot of age and insurance cost", x = "Age", y = "Insurance Cost") +
-  theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(title = "A scatterplot of BMI and insurance cost", x = "BMI",
-       y = "Insurance Cost") +
-  theme_minimal()
+##boxplots
 
-ggplot(df_clean, aes(x = smoker, y = charges)) +
+p1<-ggplot(df_clean, aes(x = age_cat, y = charges, fill = age_cat)) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot of Charges by Age Category", x = "Age Category", y = "Insurance Charges") +
+  theme_minimal() + theme(legend.position = "none")
+
+p2<-ggplot(df_clean, aes(x = bmi_cat, y = charges, fill = bmi_cat)) + 
+  geom_boxplot() + 
+  labs(title = "Boxplot of Charges by BMI Category", x = "BMI Category", y = "Insurance Charges") +
+  theme_minimal() + theme(legend.position = "none")
+
+p3<-ggplot(df_clean, aes(x = chronic_condition, y = charges, fill = chronic_condition)) +
+  geom_boxplot() + 
+  labs(title = "Boxplot of Charges by Chronic Condition", x = "Chronic Condition Status", y = "Insurance Charges") +
+  theme_minimal() + theme(legend.position = "none")
+
+p4<-ggplot(df_clean, aes(x = exercise_level, y = charges, fill = exercise_level)) +
   geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by smoking status", x = "Smoking Status", y = "Insurance Cost") +
-  theme_minimal()
+  labs(title = "Boxplot of Charges by Exercise Level", x = "Exercise Level", y = "Insurance Charges") +
+  theme_minimal() + theme(legend.position = "none")
 
-ggplot(df_clean, aes(x = age_cat, y = charges)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by age category", x = "Age Category", y = "Insurance Cost") +
-  theme_minimal()
 
-ggplot(df_clean, aes(x = bmi_cat, y = charges)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by BMI category", x = "BMI Category", y = "Insurance Cost") +
-  theme_minimal()
-
-ggplot(df_clean, aes(x = chronic_condition, y = charges)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by chronic condition status", x = "Chronic Condition Status", y = "Insurance Cost") +
-  theme_minimal()
-
-ggplot(df_clean, aes(x = exercise_level, y = charges)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by exercise level", x = "Exercise Level", y = "Insurance Cost") +
-  theme_minimal()
-
-ggplot(df_clean, aes(x = plan_type, y = charges)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by plan type", x = "Plan Type", y = "Insurance Cost") +
-  theme_minimal()
-
-ggplot(df_clean, aes(x = region, y = charges)) +
-  geom_boxplot() +
-  labs(title = "Boxplot of insurance cost by region", x = "Region", y = "Insurance Cost") +
-  theme_minimal()
-
+library(cowplot)
+plot_grid(p1, p2, p3, p4,
+          labels = c("P1", "P2", "P3", "P4"), 
+          ncol = 2)
 ### histogram of continuous variables
-ggplot(df_clean, aes(x = age)) +
-  geom_histogram(binwidth = 5, bins = 10) +
-  labs(title = "Histogram of Age", x = "Age", y = "Frequency")
+d1<-ggplot(df_clean, aes(x = age)) +
+  geom_histogram(binwidth = 10, fill = "#B57B7B", color = "white") +
+  labs(title = "Histogram of Age", x = "Age", y = "Frequency")+
+  theme_minimal()
 
-ggplot(df_clean, aes(x = bmi)) +
-  geom_histogram(binwidth = 4, bins = 10) +
-  labs(title = "Histogram of BMI", x = "BMI", y = "Frequency")
+d2<-ggplot(df_clean, aes(x = bmi)) +
+  geom_histogram(binwidth = 4, fill = "#6B8E6B", color = "white") +
+  labs(title = "Histogram of BMI", x = "BMI", y = "Frequency")+
+  theme_minimal()
 
-ggplot(df_clean, aes(x = charges)) +
-  geom_histogram(binwidth = 2500, bins=10, ) +
+d3<-ggplot(df_clean, aes(x = charges)) +
+  geom_histogram(binwidth = 2500, fill = "#5B7FA6", color = "white" ) +
   labs(title = "Histogram of Insurance Charges", x = "Insurance Charges", y = "
-Frequency")
+Frequency") +
+  theme_minimal()
 
+d4<-ggplot(df_clean, aes(x = annual_checkups)) +
+  geom_histogram(binwidth = 1, fill = "#A67B5B", color = "white") +
+  labs(title = "Histogram of Annual Checkups", x = "Annual Checkups", y = "Frequency") +
+  theme_minimal()
 
+plot_grid(d1, d2, d3, d4,
+          labels = c("D1", "D2", "D3", "D4"), 
+          ncol = 2)
 ##scatterplots 
-ggplot(df_clean, aes(x = age, y = charges)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "blue") +
-  labs(title = "Scatterplot of Age and Insurance Charges", x = "Age", y = "Insurance Charges") +
-  theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "red") +
-  labs(title = "Scatterplot of BMI and Insurance Charges", x = "BMI", y = "Insurance Charges") +
-  theme_minimal()
-  
-ggplot(df_clean, aes(x = age, y = bmi)) +
-  geom_point(alpha = 0.5) +
-  geom_smooth(method = "lm", se = FALSE, color = "green") +
-  labs(title = "Scatterplot of Age and BMI", x = "Age", y = "BMI") +
-  theme_minimal()
-
-ggplot(df_clean, aes(x = age, y = charges, color = smoker)) +
+a1<-ggplot(df_clean, aes(x = age, y = charges, color = smoker)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
   labs(title = "Scatterplot of Age and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
   theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges, color = smoker)) +
+a2<-ggplot(df_clean, aes(x = age, y = charges, color = plan_type)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of Age and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of Age and Insurance Charges by plan type", x = "Age", y = "Insurance Charges") +
   theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges, color = sex)) +
+a3<-ggplot(df_clean, aes(x = age, y = charges, color = chronic_condition)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of Age and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of Age and Insurance Charges by chronic condition", x = "Age", y = "Insurance Charges") +
   theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges, color = plan_type)) +
+a4<-ggplot(df_clean, aes(x = age, y = charges, color = sex)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of Age and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of Age and Insurance Charges by plan type", x = "Age", y = "Insurance Charges") +
   theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges, color = chronic_condition)) +
+plot_grid(a1, a2, a3, a4,
+          labels = c("A1", "A2", "A3", "A4"), 
+          ncol = 2)
+
+b1<-ggplot(df_clean, aes(x = bmi, y = charges, color = smoker)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of Age and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of BMI and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
   theme_minimal()
 
-ggplot(df_clean, aes(x = bmi, y = charges, color = age_cat)) +
+b2<-ggplot(df_clean, aes(x = bmi, y = charges, color = plan_type)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of Age and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of BMI and Insurance Charges by plan type", x = "Age", y = "Insurance Charges") +
   theme_minimal()
 
+b3<-ggplot(df_clean, aes(x = bmi, y = charges, color = chronic_condition)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Scatterplot of BMI and Insurance Charges by chronic conditions", x = "Age", y = "Insurance Charges") +
+  theme_minimal()
+
+b4<-ggplot(df_clean, aes(x = bmi, y = charges, color = sex)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Scatterplot of BMI and Insurance Charges by sex", x = "Age", y = "Insurance Charges") +
+  theme_minimal()
+
+plot_grid(b1, b2, b3, b4,
+          labels = c("B1", "B2", "B3", "B4"), 
+          ncol = 2)
 
 ### linear regression model
 names(df_clean)
