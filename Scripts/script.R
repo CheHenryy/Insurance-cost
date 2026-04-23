@@ -52,7 +52,6 @@ df_clean <- df_r %>%
       .default = NA_character_
     ),
     age_cat = case_when(
-      age < 18 ~ "Child",
       age >= 18 & age < 65 ~ "Adult",
       age >= 65 ~ "Senior",
       .default = NA_character_
@@ -69,14 +68,14 @@ df_clean <- df_r %>%
     )
   ) %>%
   mutate(
-    age_cat = factor(age_cat, levels = c("Child", "Adult", "Senior")),
+    age_cat = factor(age_cat, levels = c( "Adult", "Senior")),
     bmi_cat = factor(bmi_cat, levels = c("Underweight", "Normal Weight", "Overweight", "Obese")),
     exercise_level = factor(exercise_level, levels = c("Low", "Medium", "High"))
   ) %>%
   drop_na()  # complete case since missing data is less than 5% and likely MCAR
 
 str(df_clean)  
- table(df_clean$exercise_level)
+table(df_clean$exercise_level)
 
  #exploratory data analysis 
 
@@ -139,11 +138,12 @@ cross_tab4<-df_clean %>%
   )
 cross_tab4
 
+
 cross_tab5<-df_clean %>%
-  select(plan_type, age_cat) %>%
+  select(exercise_level, bmi_cat) %>%
   tbl_cross(
-    row = plan_type,
-    col = age_cat,
+    row = exercise_level,
+    col = bmi_cat,
     percent = "row"
   )
 cross_tab5
@@ -158,22 +158,24 @@ cross_tab6<-df_clean %>%
 cross_tab6
 
 cross_tab7<-df_clean %>%
-  select(exercise_level, bmi_cat) %>%
+  select(plan_type, age_cat) %>%
   tbl_cross(
-    row = exercise_level,
-    col = bmi_cat,
+    row = plan_type,
+    col = age_cat,
     percent = "row"
   )
 cross_tab7
 
-tbl_stack(list(cross_tab1, cross_tab2,cross_tab3,cross_tab4,cross_tab5,
+complete_crostab<-tbl_stack(list(cross_tab1, cross_tab2,cross_tab3,cross_tab4,cross_tab5,
                cross_tab6, cross_tab7),group_header = c("Crosstab:  Smoking Status by BMI Category", 
                                                          "Crosstab: Age group by BMI category", 
                                                          "Crosstab: Chronic Condition by BMI category",
                                                         " Crosstab: Plan type by BMI category",
-                                                        " Crosstab: Plan type by age category",
-                                                        " Crosstab: chronic conditions by age category",
-                                                        " Crosstab: exercise level by BMI category"))
+                                                        " Crosstab: Exercise level by BMI category",
+                                                        " Crosstab: Chronic conditions by age category",
+                                                        " Crosstab: Plan type by age category"))
+
+complete_crostab
 ### Visualizations
 
 ##boxplots
@@ -261,25 +263,25 @@ plot_grid(a1, a2, a3, a4,
 b1<-ggplot(df_clean, aes(x = bmi, y = charges, color = smoker)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of BMI and Insurance Charges by Smoking Status", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of BMI and Insurance Charges by Smoking Status", x = "BMI", y = "Insurance Charges") +
   theme_minimal()
 
 b2<-ggplot(df_clean, aes(x = bmi, y = charges, color = plan_type)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of BMI and Insurance Charges by plan type", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of BMI and Insurance Charges by plan type", x = "BMI", y = "Insurance Charges") +
   theme_minimal()
 
 b3<-ggplot(df_clean, aes(x = bmi, y = charges, color = chronic_condition)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of BMI and Insurance Charges by chronic conditions", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of BMI and Insurance Charges by chronic conditions", x = "BMI", y = "Insurance Charges") +
   theme_minimal()
 
 b4<-ggplot(df_clean, aes(x = bmi, y = charges, color = sex)) +
   geom_point(alpha = 0.5) +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Scatterplot of BMI and Insurance Charges by sex", x = "Age", y = "Insurance Charges") +
+  labs(title = "Scatterplot of BMI and Insurance Charges by sex", x = "BMI", y = "Insurance Charges") +
   theme_minimal()
 
 plot_grid(b1, b2, b3, b4,
@@ -349,12 +351,15 @@ final_model<-modelsummary(
 
 final_model
 
-### model diagnostics 
+### diagnostic plot 
 par(mfrow = c(2, 2))
-plot(model2b)
-plot(model2a)
+plot(model2b1)
+plot(model2a1)
 
-## transforming the dependent variable to address non-normality
+
+##2 transforming the dependent variable to address non-normality
+
+
 df_clean <- df_clean %>%
   mutate(log_charges = log(charges + 1)) # Adding 1 to avoid
 # log(0) issues
@@ -402,3 +407,60 @@ final_model1
 par(mfrow = c(2, 2))
 plot(model2b1)
 plot(model2a1)
+
+library(car)
+ncvTest(model2b)
+
+## 3 transforming the dependent variable to address non-normality
+
+df_no_outliers <- df_clean %>%
+  filter(abs(as.numeric(scale(charges))) < 3)
+
+# Check how many rows were removed
+nrow(df_clean) - nrow(df_no_outliers)
+
+df_clean1 <- df_no_outliers %>%
+  mutate(log_charges = log(charges + 1))
+
+# Refit the model with log-transformed charges
+model1a11 <- lm(log_charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level, data = df_clean1)
+summary(model1a11)
+#model1a <- model1a %>% tbl_regression() %>% as_flex_table()
+model1a11
+
+model1b11<- lm(charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level, data = df_clean1)
+summary(model1b11)
+#model1b <- model1b %>% tbl_regression() %>% as_flex_table()
+model1b11
+
+model2a11<- lm(charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type , data = df_clean1)
+summary(model2a1)
+#model2a <- model2a %>% tbl_regression() %>% as_flex_table()
+model2a11
+
+model2b11 <- lm(charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type, data = df_clean1)
+summary(model2b11)
+
+all_models11 <- list(
+  "Model 1a11" = model1a11,
+  "Model 1b11" = model1b11,
+  "Model 2a11" = model2a11,
+  "Model 2b11" = model2b11
+)
+final_model11<-modelsummary(
+  all_models11,
+  coef_rename = var_labels,
+  fmt = 2,
+  stars = TRUE,
+  gof_map = c("nobs", "r.squared"),
+  output = "flextable"
+) %>%
+  flextable::autofit()
+final_model11
+
+
+### model diagnostics 
+par(mfrow = c(2, 2))
+plot(model2b11)
+plot(model2a11)
+
