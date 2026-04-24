@@ -9,75 +9,10 @@ library(rstatix) # for summary statistics
 library(gtsummary) # for creating tables
 library(kableExtra) # for creating tables
 library(modelsummary) # for summarizing regression models
+library(lm.beta)
 
 ## Reading data 
-df_r<-read.csv("insurance_costs.csv")
-
-##Understanding the data structure
-dim(df_r)
-str(df_r)
-head(df_r, 10)
-tail(df_r, 4)
-view(df_r)
-colSums(is.na(df_r))
-
-table(df_r$exercise_level)
-## checking missing data
-
-pct_miss_case(df_r)
-gg_miss_var(df_r, show_pct = TRUE)
-gg_miss_var(df_r, show_pct = TRUE,facet = bmi_cat)
-gg_miss_var(df_r, show_pct = TRUE,facet = annual_checkups)
-pct_complete_case(df_r)
-
-
-## Data cleaning 
-library(tidyverse)
-library(janitor)
-
-df_clean <- df_r %>%
-  clean_names() %>%
-  distinct() %>%
-  mutate(across(where(is.character), ~ {
-    val <- str_to_title(str_trim(.x))
-    na_if(val, "")
-  })) %>%
-  mutate(across(c(bmi, age, annual_checkups), as.numeric)) %>%
-  mutate(
-    bmi_cat = case_when(
-      bmi < 18.5 ~ "Underweight",
-      bmi >= 18.5 & bmi < 25 ~ "Normal Weight",
-      bmi >= 25 & bmi < 30 ~ "Overweight",
-      bmi >= 30 ~ "Obese",
-      .default = NA_character_
-    ),
-    age_cat = case_when(
-      age >= 18 & age < 65 ~ "Adult",
-      age >= 65 ~ "Senior",
-      .default = NA_character_
-    ),
-    smoker = case_when(
-      smoker == "Yes" ~ "Smoker",
-      smoker == "No" ~ "Non-Smoker",
-      .default = smoker
-    ),
-    chronic_condition = case_when(
-      chronic_condition == "Yes" ~ "Has Condition",
-      chronic_condition == "No" ~ "No Condition",
-      .default = chronic_condition
-    )
-  ) %>%
-  mutate(
-    age_cat = factor(age_cat, levels = c( "Adult", "Senior")),
-    bmi_cat = factor(bmi_cat, levels = c("Underweight", "Normal Weight", "Overweight", "Obese")),
-    exercise_level = factor(exercise_level, levels = c("Low", "Medium", "High"))
-  ) %>%
-  drop_na()  # complete case since missing data is less than 5% and likely MCAR
-
-str(df_clean)  
-table(df_clean$exercise_level)
-
- #exploratory data analysis 
+source(here::here("Scripts", "import_and_clean.R"))
 
 ## Summary tables
 table(df_clean$children)
@@ -86,8 +21,8 @@ table(df_clean$prior_claims)
 table(df_clean$annual_checkups)
 
 
-cont_sum<-df_r %>%
-  get_summary_stats(age,bmi,charges, type = "common")
+cont_sum<-df_clean %>%
+  get_summary_stats(age,bmi,charges, show = c("mean", "sd", "median", "min", "max"))
 cont_sum
 flextable(cont_sum)%>% 
   colformat_double(digits = 1)
@@ -96,8 +31,7 @@ flextable(cont_sum)%>%
 cat_sum<-df_clean %>%
   select(sex, smoker, region, bmi_cat, age_cat,chronic_condition,exercise_level,plan_type) %>%
   tbl_summary(
-    statistic = list(all_categorical() ~ "{n} ({p}%)"), 
-    missing = "no")
+    statistic = list(all_categorical() ~ "{n} ({p}%)"))
 cat_sum
 
 ##Cross tabulations
@@ -289,6 +223,7 @@ plot_grid(b1, b2, b3, b4,
           ncol = 2)
 
 ### linear regression model
+
 names(df_clean)
 model1a <- lm(charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level, data = df_clean)
 summary(model1a)
@@ -300,12 +235,11 @@ summary(model1b)
 #model1b <- model1b %>% tbl_regression() %>% as_flex_table()
 model1b
 
-model2a <- lm(charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type , data = df_clean)
+model2a <- lm(charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + plan_type , data = df_clean)
 summary(model2a)
 #model2a <- model2a %>% tbl_regression() %>% as_flex_table()
-model2a
 
-model2b <- lm(charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type, data = df_clean)
+model2b <- lm(charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + plan_type, data = df_clean)
 summary(model2b)
 #model2b <- model2b %>% tbl_regression() %>% as_flex_table()
 model2b
@@ -353,114 +287,25 @@ final_model
 
 ### diagnostic plot 
 par(mfrow = c(2, 2))
-plot(model2b1)
-plot(model2a1)
+#plot(model2b)
+plot(model2a)
 
+model_beta<-lm.beta(model2a)
 
-##2 transforming the dependent variable to address non-normality
+std_coefs <- model_beta$standardized.coefficients[-1]  # Remove intercept (NA)
 
-
-df_clean <- df_clean %>%
-  mutate(log_charges = log(charges + 1)) # Adding 1 to avoid
-# log(0) issues
-
-
-
-# Refit the model with log-transformed charges
-model1a1 <- lm(log_charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level, data = df_clean)
-summary(model1a1)
-#model1a <- model1a %>% tbl_regression() %>% as_flex_table()
-model1a1
-
-model1b1 <- lm(log_charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level, data = df_clean)
-summary(model1b1)
-#model1b <- model1b %>% tbl_regression() %>% as_flex_table()
-model1b1
-
-model2a1<- lm(log_charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type , data = df_clean)
-summary(model2a1)
-#model2a <- model2a %>% tbl_regression() %>% as_flex_table()
-model2a1
-
-model2b1 <- lm(log_charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type, data = df_clean)
-summary(model2b1)
-
-all_models1 <- list(
-  "Model 1a1" = model1a1,
-  "Model 1b1" = model1b1,
-  "Model 2a1" = model2a1,
-  "Model 2b1" = model2b1
-)
-final_model1<-modelsummary(
-  all_models1,
-  coef_rename = var_labels,
-  fmt = 2,
-  stars = TRUE,
-  gof_map = c("nobs", "r.squared"),
-  output = "flextable"
+# Build data frame
+results_table <- data.frame(
+  Variable = names(std_coefs),
+  Std_Beta = round(as.numeric(std_coefs), 3),
+  Abs_Std_Beta = round(abs(as.numeric(std_coefs)), 3)
 ) %>%
-  flextable::autofit()
-final_model1
+  arrange(desc(Abs_Std_Beta))
 
-
-### model diagnostics 
-par(mfrow = c(2, 2))
-plot(model2b1)
-plot(model2a1)
-
-library(car)
-ncvTest(model2b)
-
-## 3 transforming the dependent variable to address non-normality
-
-df_no_outliers <- df_clean %>%
-  filter(abs(as.numeric(scale(charges))) < 3)
-
-# Check how many rows were removed
-nrow(df_clean) - nrow(df_no_outliers)
-
-df_clean1 <- df_no_outliers %>%
-  mutate(log_charges = log(charges + 1))
-
-# Refit the model with log-transformed charges
-model1a11 <- lm(log_charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level, data = df_clean1)
-summary(model1a11)
-#model1a <- model1a %>% tbl_regression() %>% as_flex_table()
-model1a11
-
-model1b11<- lm(charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level, data = df_clean1)
-summary(model1b11)
-#model1b <- model1b %>% tbl_regression() %>% as_flex_table()
-model1b11
-
-model2a11<- lm(charges ~ age + bmi + sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type , data = df_clean1)
-summary(model2a1)
-#model2a <- model2a %>% tbl_regression() %>% as_flex_table()
-model2a11
-
-model2b11 <- lm(charges ~ age_cat + bmi_cat +sex + smoker + chronic_condition + exercise_level + prior_accidents + prior_claims + annual_checkups + plan_type, data = df_clean1)
-summary(model2b11)
-
-all_models11 <- list(
-  "Model 1a11" = model1a11,
-  "Model 1b11" = model1b11,
-  "Model 2a11" = model2a11,
-  "Model 2b11" = model2b11
-)
-final_model11<-modelsummary(
-  all_models11,
-  coef_rename = var_labels,
-  fmt = 2,
-  stars = TRUE,
-  gof_map = c("nobs", "r.squared"),
-  output = "flextable"
-) %>%
-  flextable::autofit()
-final_model11
-
-
-### model diagnostics 
-par(mfrow = c(2, 2))
-plot(model2b11)
-plot(model2a11)
+# Now kable works perfectly
+standard<-kable(results_table, 
+      digits = 3, 
+      col.names = c("Variable", "standerdised beta", "Absolute standerdised beta"),
+      caption = "Standardized Regression Coefficients (Ranked by Importance)")
+standard
 

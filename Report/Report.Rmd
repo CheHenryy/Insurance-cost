@@ -1,0 +1,96 @@
+---
+title: "Report on insurance cost analysis"
+author: "Che Henry"
+date: "`r Sys.Date()`"
+output: word_document
+---
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE, include = FALSE}
+#load libraries 
+library(tidyverse)
+library(flextable)
+library(here)
+source(here::here("Scripts", "script.R"))
+```
+
+# Introduction 
+The goal of this report is to analyze historical insurance data to identify the factors that influence insurance costs and inform data-driven decision making.By analyzing information on customers, lifestyle factors, health-related variables, and prior claims history, the report aims to understand the main drivers of insurance costs, as well as highlight which variables contribute most to variation in insurance costs. The analysis will involve descriptive statistics, visualizations, and regression modeling to identify significant predictors of insurance costs and provide insights for insurance companies to optimize their pricing strategies.
+
+# Method
+I analyzed historical data of customers containing information on insurance costs and various factors that may influence those costs. The analysis involved several steps, including data cleaning, descriptive statistics, visualizations, and regression modeling.
+
+data cleaning involved handling missing values, checking for duplicates, and creating new variables (eg age_group, bmi_category) suitable format for analysis. Since missing data was less than 5% and likely missing at random, I performed a complete case analysis. This is important to ensure that all models at later stages are based on the same sample size. I created age groups and bmi categories to identify risk groups and explore how these categories relate to insurance costs.
+
+After cleaning the data, I conducted descriptive statistics to summarize both continuous(n, mean, standard deviation, median) and categorical variables (n(%)). I also created Visualizations such as histograms, box plots and scatter plots to explore the distribution of variables and the relationships between them. 
+
+Finally, regression modeling was performed to identify predictors of insurance costs and quantify their effects. We fitted four different models: Model1a consisted of important background and health variables such as age(in years), bmi(continuous), exercise level, smoking status and chronic condition. Model1b included the same variables as Model1a but with age and bmi categorized into groups of increasing risk. Model2a included all variables in Model1a plus information about prior accidents, prior claims,plan type and how often they went for checkups, while Model2b included all variables in Model2a, but with age and bmi categorised. We compared the adjusted R-squared value to determine which model best explained the variation in insurance costs.
+
+# Results
+Our final analytic sample (n=1031) had a mean age of 42.4 years (SD=12.3) and a mean BMI of 27.4 (SD=4.6). The majority of the sample were non-smokers (81%) and had no chronic conditions (76%). The average insurance cost was 10,084 (SD=4,606). 49% of the sample were females.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+#source(here::here("Scripts", "script.R"))
+flextable(cont_sum)%>%
+  autofit()%>%
+  theme_vanilla()
+
+```
+
+after categorization, 71% of the sample were classified as overweight(42%) or obese(29% ). In terms of age groups, ~95% of the sample were adults (18-64 years) and ~5% were seniors (65 years and above).
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+#source(here::here("Scripts", "script.R"))
+cat_sum
+ 
+
+```
+
+Age and BMI showed a relatively normal distribution, while insurance costs were right-skewed. 
+
+```{r, echo=FALSE, fig.width=7, fig.asp=0.618, out.width="90%"}
+knitr::include_graphics(here("Visualisations","descriptive plot1.png"))
+```
+The Boxplots revealed that seniors, overweight and obese persons,persons with chronic conditions and persons with low exercise level had higher insurance costs compared to others.  
+```{r, echo=FALSE, fig.width=7, fig.asp=0.618, out.width="95%"}
+knitr::include_graphics(here("Visualisations","boxplots.png"))
+```
+
+The Scatter plots indicate a positive relationship between BMI and insurance costs, with higher costs observed smokers and persons with chronic conditions.
+
+```{r, echo=FALSE, fig.width=7, fig.asp=0.618, out.width="90%"}
+knitr::include_graphics(here("Visualisations","scatterplot B.png"))
+```
+Similarly, I observed a positive relationship between age and insurance costs, with higher costs observed smokers and persons with chronic conditions.
+```{r, echo=FALSE, fig.width=7, fig.asp=0.618, out.width="90%"}
+knitr::include_graphics(here("Visualisations","scatterplot A.png"))
+```
+
+The regression results indicated that the full model(model2a and model2b) that included all variables had a higher adjusted R-squared value compared to the simpler model(model1a and model1b) that only included background and health variables, suggesting that including information about prior accidents, prior claims and plan type explained more of the variation in insurance costs. 
+comparing both full models, model2a with continuous age and bmi had a slightly higher adjusted R-squared value(0.75) than model2b with categorized age and bmi, suggesting that using continuous variables provided a better fit to the data.
+
+
+Although model2b, is not out final model, it provides valuable information about the relative risk of different age and bmi categories. Particularly, being in the senior age group and being classified as obese were associated with significantly higher insurance costs compared to the reference groups. This highlights the importance of age and BMI as key predictors of insurance costs and suggests that categorizing these variables can provide insights into risk stratification.
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+final_model
+
+```
+
+Based on the standardized coefficients from the final model, smoking had the largest effect on insurance costs, followed by  chronic condition. This suggests that these two variables should be considered strongly when deciding the premium price for each customer. 
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+
+standard
+
+```
+
+As mentioned earlier in the results, the outcome variable was right skewed, thus slightly violates the normality assumption of linear regression. The diagnostic plots revealed that the residuals were not normally distributed at the right tail, which is expected given the skewness of the outcome variable. However, for the rest of the range of fitted values, the residuals appeared to be approximately normally distributed. The residuals vs fitted plot showed a random scatter around the horizontal line at zero, suggesting that the assumption of homoscedasticity was reasonably met. Overall, while there is some deviation from normality in the residuals due to the skewness of the outcome variable, the diagnostic plots suggest that the assumptions of linear regression are reasonably satisfied for this model. 
+
+```{r, echo=FALSE, fig.width=7, fig.asp=0.618, out.width="90%"}
+knitr::include_graphics(here("Visualisations","diagnostic.png"))
+```
+
+# Conclusions
+In conclusion, this analysis identified several key predictors of insurance costs, including age, BMI, smoking status, chronic conditions, exercise level, prior accidents, prior claims and plan type. Smoking and chronic conditions were found to have the largest effects on insurance costs, suggesting that these factors should be strongly considered when determining premium prices for customers. Additionally, categorizing age and BMI provided insights into risk stratification, with seniors and obese individuals having significantly higher insurance costs. Overall, these findings can inform insurance companies in optimizing their pricing strategies and tailoring their offerings to different customer segments based on their risk profiles.
