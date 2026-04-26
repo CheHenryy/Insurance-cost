@@ -3,7 +3,7 @@ library(tidyverse) # for data manipulation and visualization
 
 
 ## Reading data 
-df_r<-read.csv("C:/Users/chn03/Downloads/insurance cost/Insurance-cost/insurance_costs.csv")
+df_r<-read.csv("data/insurance_costs.csv")
 
 ##Understanding the data structure
 dim(df_r)
