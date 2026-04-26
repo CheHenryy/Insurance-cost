@@ -23,7 +23,7 @@ that integrates the code and the report.
 To run the analysis, install R and R studio on your computer. 
 - Clone this repository to your local computer
 - Run the script import_and_clean.R to import and clean the data.
--Next, run the script script.R to perform the descriptive statistics, visualizations 
+- Next, run the script script.R to perform the descriptive statistics, visualizations 
 and regression modelling for this project.
 - Finally, run the Report.Rmd file to generate the final report in word and pdf format.
 
