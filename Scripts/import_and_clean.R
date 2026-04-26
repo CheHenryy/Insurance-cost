@@ -13,7 +13,6 @@ tail(df_r, 4)
 colSums(is.na(df_r))
 pct_miss_case(df_r)
 
-
 ## Data cleaning 
 
 df_clean <- df_r %>%

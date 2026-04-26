@@ -308,4 +308,3 @@ standard<-kable(results_table,
       col.names = c("Variable", "standerdised beta", "Absolute standerdised beta"),
       caption = "Standardized Regression Coefficients (Ranked by Importance)")
 standard
-
