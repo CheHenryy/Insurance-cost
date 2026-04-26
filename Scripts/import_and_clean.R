@@ -6,12 +6,12 @@ library(tidyverse) # for data manipulation and visualization
 df_r<-read.csv("C:/Users/chn03/Downloads/insurance cost/Insurance-cost/insurance_costs.csv")
 
 ##Understanding the data structure
-#dim(df_r)
-#str(df_r)
-#head(df_r, 10)
-#tail(df_r, 4)
-#colSums(is.na(df_r))
-
+dim(df_r)
+str(df_r)
+head(df_r, 10)
+tail(df_r, 4)
+colSums(is.na(df_r))
+pct_miss_case(df_r)
 
 
 ## Data cleaning 
